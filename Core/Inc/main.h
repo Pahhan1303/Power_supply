@@ -159,6 +159,7 @@ void Error_Handler(void);
 #define _24_Inconsola          &Font_24_Inconsola
 #define _24_Ubuntu             &Font_24_Ubuntu
 #define _24_Ubuntu_Bold        &Font_24_Ubuntu_Bold
+#define _24_Segment_7_Num      &Font_24_Segment_7_Num
 #define _24_Segment_16_Full    &Font_24_Segment_16_Full
 #define _24_Mono               &Font_24_Mono
 #define _24_Mono_Bold          &Font_24_Mono_Bold

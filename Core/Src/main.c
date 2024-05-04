@@ -94,6 +94,7 @@
 #include "fonts/Font_24_Inconsola.h"
 #include "fonts/Font_24_Ubuntu.h"
 #include "fonts/Font_24_Ubuntu_Bold.h"
+#include "fonts/Font_24_Segment_7_Num.h"
 #include "fonts/Font_24_Segment_16_Full.h"
 #include "fonts/Font_24_Mono.h"
 #include "fonts/Font_24_Mono_Bold.h"
@@ -159,6 +160,13 @@ __IO uint16_t mAmp = 0;
 __IO uint32_t mWatt = 0;
 __IO uint16_t set_mVolt = 0;
 __IO uint16_t set_mAmp = 0;
+
+uint8_t touchIRQ = 0;
+uint16_t touchX = 0, touchY = 0;
+
+uint8_t scr = 0;
+uint8_t l_scr = 254;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -172,6 +180,12 @@ static void MX_TIM4_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
+void loop(void);
+void mainScr(void);
+void settScrInit(void);
+void settScr(void);
+void writeNum(uint16_t x, uint16_t y, uint32_t num, const GFXfont *font,
+		uint32_t color, uint8_t numAfterDot, char lBuff[]);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -259,26 +273,14 @@ int main(void) {
 	LCD_Init();
 	XPT2046_Init();
 
-	char buff_v[7] = "0";
-	char l_buff_v[7] = "0";
-	char buff_i[7] = "0";
-	char l_buff_i[7] = "0";
-	char buff_w[12] = "0";
-	char l_buff_w[12] = "0";
 	char buff_enc[10] = "0";
 	char l_buff_enc[10] = "0";
-	uint8_t i = 0;
 
-	uint8_t touchIRQ = 0;
 	uint64_t l_touchIRQ = 0;
 	uint8_t isPressed = 0;
-	uint16_t touchX = 0, touchY = 0;
+	uint8_t i;
 
 	uint64_t prev_millis = 0;
-	uint8_t scr = 0;
-	uint8_t subScr = 0;
-	uint8_t l_scr = 254;
-	uint8_t l_subScr = 254;
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -305,148 +307,19 @@ int main(void) {
 			prev_millis = millis;
 			switch (scr) {
 			case 0:
-				if (scr != l_scr) {
-					LCD_Rect_Fill(0, 0, 320, 240, BLACK);
-					LCD_Rect(0, 0, 320, 240, 1, BLUE);
-
-					LCD_Line(1, 45, 166, 45, 1, BLUE);
-					LCD_Line(166, 46, 166, 193, 1, BLUE);
-					LCD_Line(1, 194, 166, 194, 1, BLUE);
-
-					LCD_Font(139, 99, "V", _24_Grotesk, 1, GREEN);
-					LCD_Font(139, 148, "A", _24_Grotesk, 1, YELLOW);
-					LCD_Font(139, 197, "W", _24_Grotesk, 1, MAGENTA);
-
-					for (i = 0; i < 7; i++)
-						l_buff_v[i] = 0;
-					for (i = 0; i < 7; i++)
-						l_buff_i[i] = 0;
-					for (i = 0; i < 7; i++)
-						l_buff_w[i] = 0;
-					l_scr = scr;
-				}
-				if (subScr != l_subScr) {
-					LCD_Rect(1, 46, 164, 49, 1, BLACK);
-					LCD_Rect(1, 95, 164, 49, 1, BLACK);
-					l_subScr = subScr;
-				}
-
-				switch (subScr) {
-				case 0:
-					sprintf(buff_v, "%02d.%02d", mVolt / 1000,
-							(mVolt % 1000) / 10);
-					LCD_FontRw(2, 95, buff_v, l_buff_v, _32_Segment_7_Num_Plus,
-							1,
-							GREEN,
-							BLACK);
-					for (i = 0; i < 7; i++)
-						l_buff_v[i] = buff_v[i];
-					sprintf(buff_i, "%01d.%03d", mAmp / 1000, mAmp % 1000);
-					LCD_FontRw(2, 144, buff_i, l_buff_i, _32_Segment_7_Num_Plus,
-							1,
-							YELLOW,
-							BLACK);
-					for (i = 0; i < 7; i++)
-						l_buff_i[i] = buff_i[i];
-					if (touchIRQ && touchX > 1 && touchX < 165 && touchY > 46
-							&& touchY < 95) {
-						subScr = 1;
-						touchIRQ = 0;
-					} else if (touchIRQ && touchX > 1 && touchX < 165
-							&& touchY > 95 && touchY < 144) {
-						subScr = 2;
-						touchIRQ = 0;
-					}
-					break;
-				case 1:
-					LCD_Rect(1, 46, 164, 49, 1, WHITE);
-					sprintf(buff_v, "%02d.%02d", set_mVolt / 1000,
-							(set_mVolt % 1000) / 10);
-					LCD_FontRw(2, 95, buff_v, l_buff_v, _32_Segment_7_Num_Plus,
-							1,
-							GREEN,
-							BLACK);
-					for (i = 0; i < 7; i++)
-						l_buff_v[i] = buff_v[i];
-					sprintf(buff_i, "%01d.%03d", mAmp / 1000, mAmp % 1000);
-					LCD_FontRw(2, 144, buff_i, l_buff_i, _32_Segment_7_Num_Plus,
-							1,
-							YELLOW,
-							BLACK);
-					for (i = 0; i < 7; i++)
-						l_buff_i[i] = buff_i[i];
-					if (touchIRQ && touchX > 1 && touchX < 165 && touchY > 46
-							&& touchY < 95) {
-						subScr = 0;
-						touchIRQ = 0;
-					}
-					break;
-				case 2:
-					LCD_Rect(1, 95, 164, 49, 1, WHITE);
-					sprintf(buff_v, "%02d.%02d", mVolt / 1000,
-							(mVolt % 1000) / 10);
-					LCD_FontRw(2, 95, buff_v, l_buff_v, _32_Segment_7_Num_Plus,
-							1,
-							GREEN,
-							BLACK);
-					for (i = 0; i < 7; i++)
-						l_buff_v[i] = buff_v[i];
-					sprintf(buff_i, "%01d.%03d", set_mAmp / 1000,
-							set_mAmp % 1000);
-					LCD_FontRw(2, 144, buff_i, l_buff_i, _32_Segment_7_Num_Plus,
-							1,
-							YELLOW,
-							BLACK);
-					for (i = 0; i < 7; i++)
-						l_buff_i[i] = buff_i[i];
-					if (touchIRQ && touchX > 1 && touchX < 165 && touchY > 95
-							&& touchY < 144) {
-						subScr = 0;
-						touchIRQ = 0;
-					}
-					break;
-				}
-
-				if (mWatt < 10000)
-					sprintf(buff_w, "%01ld.%03ld", mWatt / 1000, mWatt % 1000);
-				else if (mWatt < 100000)
-					sprintf(buff_w, "%02ld.%02ld", mWatt / 1000,
-							(mWatt % 1000) / 10);
-				else
-					sprintf(buff_w, "%03ld.%01ld", mWatt / 1000,
-							(mWatt % 1000) / 100);
-				LCD_FontRw(2, 193, buff_w, l_buff_w, _32_Segment_7_Num_Plus, 1,
-				MAGENTA,
-				BLACK);
-				for (i = 0; i < 7; i++)
-					l_buff_w[i] = buff_w[i];
-
-				if (touchIRQ && touchX > 270 && touchX < 320 && touchY > 190
-						&& touchY < 240) {
-					scr = 1;
-					touchIRQ = 0;
-				}
+				mainScr();
 				break;
-
 			case 1:
 				if (scr != l_scr) {
-					LCD_Rect_Fill(0, 0, 320, 240, BLACK);
+					settScrInit();
 					l_scr = scr;
 				}
-				char buff[6];
-				sprintf(buff, "hello");
-				LCD_Font(0, 193, buff, _9_Sans, 1, MAGENTA);
-				if (touchIRQ && touchX > 0 && touchX < 320 && touchY > 0
-						&& touchY < 240) {
-					scr = 0;
-					touchIRQ = 0;
-				}
-
+				settScr();
 				break;
 			}
 
 			sprintf(buff_enc, "enc:%ld", enc);
-			LCD_FontRw(1, 14, buff_enc, l_buff_enc, _9_Sans, 1, YELLOW,
+			LCD_FontRw(1, 239, buff_enc, l_buff_enc, _9_Sans, 1, YELLOW,
 			BLACK);
 			for (i = 0; i < 10; i++)
 				l_buff_enc[i] = buff_enc[i];
@@ -849,6 +722,133 @@ static void MX_GPIO_Init(void) {
 }
 
 /* USER CODE BEGIN 4 */
+#define yBase_v	39
+#define yBase_a	yBase_v + 38
+#define yBase_w	yBase_a + 38
+#define xOffset	153 + 2
+
+void mainScr(void) {
+	static uint8_t subScr = 0;
+	static uint8_t l_subScr = 254;
+
+	uint8_t i;
+
+	static char l_buff_v[5];
+	static char l_buff_a[5];
+	static char l_buff_w[5];
+	static char l_buff_setv[5];
+	static char l_buff_seta[5];
+
+	if (scr != l_scr) {
+		LCD_Rect_Fill(0, 0, 320, 240, BLACK);
+		LCD_Rect(0, 0, 320, 240, 1, BLUE);
+
+		writeNum(xOffset, yBase_v, set_mVolt, _24_Segment_7_Num, GREEN, 2, l_buff_setv);
+		LCD_Font(122 + xOffset, yBase_v - 2, "V", _18_Sans, 1, GREEN);
+		writeNum(xOffset, yBase_a, set_mAmp, _24_Segment_7_Num, YELLOW, 3, l_buff_seta);
+		LCD_Font(122 + xOffset, yBase_a - 2, "A", _18_Sans, 1, YELLOW);
+
+		LCD_Font(122, yBase_v - 2, "V", _18_Sans, 1, GREEN);
+		LCD_Font(122, yBase_a - 2, "A", _18_Sans, 1, YELLOW);
+		LCD_Font(122, yBase_w - 2, "W", _18_Sans, 1, MAGENTA);
+
+		for (i = 0; i < 5; i++) {
+			l_buff_v[i] = 0;
+			l_buff_a[i] = 0;
+			l_buff_w[i] = 0;
+		}
+		l_scr = scr;
+	}
+
+	if (subScr != l_subScr) {
+		LCD_Rect(1, 46, 164, 49, 1, BLACK);
+		LCD_Rect(1, 95, 164, 49, 1, BLACK);
+		l_subScr = subScr;
+	}
+
+	switch (subScr) {
+	case 0:
+		writeNum(2, yBase_v, mVolt, _24_Segment_7_Num, GREEN, 2, l_buff_v);
+		writeNum(2, yBase_a, mAmp, _24_Segment_7_Num, YELLOW, 3, l_buff_a);
+
+		if (touchIRQ && touchX > 1 && touchX < 165 && touchY > 46
+				&& touchY < 95) {
+			subScr = 1;
+			touchIRQ = 0;
+		} else if (touchIRQ && touchX > 1 && touchX < 165 && touchY > 95
+				&& touchY < 144) {
+			subScr = 2;
+			touchIRQ = 0;
+		}
+		break;
+	case 1:
+		LCD_Rect(1, 46, 164, 49, 1, WHITE);
+		writeNum(2, yBase_v, set_mVolt, _24_Segment_7_Num, GREEN, 2, l_buff_v);
+		writeNum(2, yBase_a, mAmp, _24_Segment_7_Num, YELLOW, 3, l_buff_a);
+		if (touchIRQ && touchX > 1 && touchX < 165 && touchY > 46
+				&& touchY < 95) {
+			subScr = 0;
+			touchIRQ = 0;
+		}
+		break;
+	case 2:
+		LCD_Rect(1, 95, 164, 49, 1, WHITE);
+		writeNum(2, 95, mVolt, _24_Segment_7_Num, GREEN, 2, l_buff_v);
+		writeNum(2, 144, set_mAmp, _24_Segment_7_Num, YELLOW, 3, l_buff_a);
+		if (touchIRQ && touchX > 1 && touchX < 165 && touchY > 95
+				&& touchY < 144) {
+			subScr = 0;
+			touchIRQ = 0;
+		}
+		break;
+	}
+
+	if (mWatt < 10000)
+		writeNum(2, yBase_w, mWatt, _24_Segment_7_Num, MAGENTA, 3, l_buff_w);
+	else if (mWatt < 100000)
+		writeNum(2, yBase_w, mWatt, _24_Segment_7_Num, MAGENTA, 2, l_buff_w);
+	else
+		writeNum(2, yBase_w, mWatt, _24_Segment_7_Num, MAGENTA, 1, l_buff_w);
+	if (touchIRQ && touchX > 270 && touchX < 320 && touchY > 190
+			&& touchY < 240) {
+		scr = 1;
+		touchIRQ = 0;
+	}
+}
+
+void settScrInit(void) {
+	LCD_Rect_Fill(0, 0, 320, 240, BLACK);
+}
+
+void settScr(void) {
+	char buff[6];
+	sprintf(buff, "hello");
+	LCD_Font(0, 193, buff, _9_Sans, 1, MAGENTA);
+	if (touchIRQ && touchX > 0 && touchX < 320 && touchY > 0 && touchY < 240) {
+		scr = 0;
+		touchIRQ = 0;
+	}
+}
+
+void writeNum(uint16_t x, uint16_t y, uint32_t num, const GFXfont *font,
+		uint32_t color, uint8_t numAfterDot, char lBuff[]) {
+	char buff[12] = "0";
+	if (numAfterDot == 1) {
+		sprintf(buff, "%03ld.%01ld", num / 1000, (num % 1000) / 100);
+
+	} else if (numAfterDot == 2) {
+		sprintf(buff, "%02ld.%02ld", num / 1000, (num % 1000) / 10);
+
+	} else if (numAfterDot == 3) {
+		sprintf(buff, "%01ld.%03ld", num / 1000, num % 1000);
+
+	}
+
+	LCD_FontRw(x, y, buff, lBuff, font, 1, color,
+	BLACK);
+	memcpy((void*)lBuff, (void*)buff, (sizeof(char) * 5));
+}
+
 void TIM3_Callback(void) {
 	if (LL_TIM_IsActiveFlag_UPDATE(TIM3)) {
 		LL_TIM_ClearFlag_UPDATE(TIM3);
