@@ -1,6 +1,0 @@
-../Core/Src/xpt2046.c:10:6:XPT2046_Init	0	static
-../Core/Src/xpt2046.c:25:10:getRaw	8	static
-../Core/Src/xpt2046.c:59:24:Y	8	static
-../Core/Src/xpt2046.c:50:24:X	8	static
-../Core/Src/xpt2046.c:68:10:getX	8	static
-../Core/Src/xpt2046.c:83:10:getY	8	static
